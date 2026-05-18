@@ -20,7 +20,7 @@ function Navbar() {
     <nav className="glass sticky top-0 z-50 border-0 border-b border-border">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
-        <img src="/fitai-logo.jpeg" alt="FitAI Logo" className="w-8 h-8 rounded-lg shadow-glow" />
+          <img src="/fitai-logo.jpeg" alt="FitAI Logo" className="w-8 h-8 rounded-lg shadow-glow" />
           <span className="font-semibold text-white tracking-tight">
             Fit<span className="gradient-text">AI</span>
           </span>
@@ -141,8 +141,8 @@ const FEATURES = [
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <line x1="18" y1="20" x2="18" y2="10" />
         <line x1="12" y1="20" x2="12" y2="4" />
-        <line x1="6"  y1="20" x2="6"  y2="14" />
-        <line x1="3"  y1="20" x2="21" y2="20" />
+        <line x1="6" y1="20" x2="6" y2="14" />
+        <line x1="3" y1="20" x2="21" y2="20" />
       </svg>
     ),
   },
@@ -200,7 +200,7 @@ function Features() {
 function DashboardPreview() {
   // Static "mock" dashboard built entirely in CSS — no images, no extra deps.
   const bars = [42, 68, 51, 79, 63, 88, 72, 95, 81, 90, 76, 92];
-  const months = ["J","F","M","A","M","J","J","A","S","O","N","D"];
+  const months = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
 
   return (
     <section id="dashboard" className="py-20 sm:py-28">
@@ -233,25 +233,28 @@ function DashboardPreview() {
           <div className="mt-2 rounded-2xl bg-black/40 p-4 sm:p-6 border border-border">
             {/* Top KPI cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-              {[
-                { l: "Active patients", v: "12,438", d: "+8.2%" },
-                { l: "Avg. response",   v: "1.4s",    d: "-22%"  },
-                { l: "Retention",       v: "94.6%",  d: "+2.1%" },
-                { l: "Revenue (MTD)",   v: "$284k",  d: "+14%"  },
-              ].map((k) => (
-                <div
-                  key={k.l}
-                  className="glass rounded-xl p-3 sm:p-4"
-                >
-                  <div className="text-[11px] text-gray-500">{k.l}</div>
-                  <div className="text-lg sm:text-xl font-semibold text-white mt-1">
-                    {k.v}
-                  </div>
-                  <div className="text-[11px] text-green-400 mt-1">{k.d}</div>
-                </div>
-              ))}
-            </div>
+            {[
+  { label: "Active Patients", v: "12,438", d: "+8.2%" },
+  { label: "Monthly Revenue", v: "$284k", d: "+14%" },
+  { label: "AI Recommendations", v: "148", d: "+2.1%" },
+  { label: "Staff Efficiency", v: "94%", d: "+11%" },
+].map((k) => (
+  <div
+    key={k.label}
+    className="glass rounded-xl p-3 sm:p-4"
+  >
+    <div className="text-[11px] text-gray-500">{k.label}</div>
 
+    <div className="text-lg sm:text-xl font-semibold text-white mt-1">
+      {k.v}
+    </div>
+
+    <div className="text-[11px] text-green-400 mt-1">
+      {k.d}
+    </div>
+  </div>
+))}
+</div>
             {/* Chart + side panel */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
               {/* Bar chart */}
@@ -277,15 +280,13 @@ function DashboardPreview() {
                       className="flex-1 flex flex-col items-center gap-1.5"
                     >
                       <div
-                        className="w-full rounded-md bar-grow"
+                        className="w-full rounded-md bg-gradient-to-t from-blue-500 via-purple-500 to-pink-400"
                         style={{
                           height: `${h}%`,
-                          background:
-                            "linear-gradient(180deg, #60a5fa 0%, #7c5cff 50%, #a855f7 100%)",
-                          boxShadow: "0 0 18px rgba(124,92,255,0.25)",
-                          animationDelay: `${i * 60}ms`,
+                          minHeight: `${h}px`,
+                          width: "100%",
                         }}
-                      />
+                      ></div>                     
                       <span className="text-[10px] text-gray-600">
                         {months[i]}
                       </span>
