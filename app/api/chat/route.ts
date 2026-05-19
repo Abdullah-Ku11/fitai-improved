@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { supabase } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
@@ -155,7 +156,14 @@ export async function POST(req: NextRequest) {
         { status: 502 }
       );
     }
-
+    console.log("SUPABASE TEST:", supabase);
+    const { data, error } = await supabase.from("messages").insert({
+      user_message: message,
+      ai_response: reply,
+    });
+    
+    console.log("DATA:", data);
+    console.log("ERROR:", error);
     return NextResponse.json({ reply });
   } catch (err) {
     console.error("Chat API error:", err);
