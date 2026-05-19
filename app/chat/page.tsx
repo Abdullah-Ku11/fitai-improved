@@ -1,28 +1,54 @@
 "use client";
 
-import { useEffect, useRef, useState, FormEvent } from "react";
+import { useEffect, useRef, useState, FormEvent, RefObject } from "react";
 
 type Message = {
   role: "user" | "assistant";
   content: string;
 };
 
-/** Returns true if the text contains Arabic script characters. */
+const STORAGE_KEY = "fitai-chat";
+
+const WELCOME_MESSAGE: Message = {
+  role: "assistant",
+  content:
+    "Hi! I'm FitAI ✨\nYour AI nutrition and fitness assistant. Ask me anything about meals, macros, workouts, or healthy habits.\n\nمرحبًا! أنا FitAI ✨\nمساعدك الذكي للتغذية واللياقة. اسألني عن الوجبات، السعرات، التمارين، أو العادات الصحية.",
+};
+
 function isArabic(text: string): boolean {
   return /[\u0600-\u06FF]/.test(text);
 }
 
-export default function Home() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content:
-        "Hi! I'm FitAI ✨\nTell me what you ate (e.g. \"2 eggs + 1 slice of bread\") and I'll break down the macros for you.\n\nمرحبًا! أنا FitAI ✨\nأخبرني بما تناولته (مثل: \"بيضتان + شريحة خبز\") وسأحسب لك السعرات والعناصر الغذائية.",
-    },
-  ]);
+export default function ChatPage() {
+  const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Message[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed);
+        }
+      }
+    } catch {
+      // ignore corrupted storage
+    }
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    } catch {
+      // ignore quota errors
+    }
+  }, [messages, hydrated]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -30,6 +56,17 @@ export default function Home() {
       behavior: "smooth",
     });
   }, [messages, loading]);
+
+  function handleNewChat() {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+    setMessages([WELCOME_MESSAGE]);
+    setInput("");
+    setLoading(false);
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -48,7 +85,7 @@ export default function Home() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: text, history: messages }),
       });
       const data = await res.json();
       setMessages([
@@ -77,27 +114,122 @@ export default function Home() {
     }
   }
 
-  // The placeholder + footer follow whatever language the user is currently typing.
+  return (
+    <div className="flex h-screen w-full overflow-hidden">
+      <Sidebar onNewChat={handleNewChat} messageCount={messages.length} />
+      <MainChatArea
+        messages={messages}
+        input={input}
+        setInput={setInput}
+        loading={loading}
+        scrollRef={scrollRef}
+        handleSubmit={handleSubmit}
+      />
+    </div>
+  );
+}
+
+function Sidebar({
+  onNewChat,
+  messageCount,
+}: {
+  onNewChat: () => void;
+  messageCount: number;
+}) {
+  return (
+    <aside className="hidden md:flex flex-col w-[280px] shrink-0 glass border-0 border-r border-border h-full">
+      <div className="px-4 py-4 flex items-center gap-2.5 border-b border-border">
+        <div className="w-8 h-8 rounded-lg avatar-gradient flex items-center justify-center text-white font-bold text-sm shadow-glow">
+          F
+        </div>
+        <div>
+          <div className="font-semibold text-white text-sm leading-tight">
+            Fit<span className="gradient-text">AI</span>
+          </div>
+          <div className="text-[10px] text-gray-500">
+            Nutrition & Fitness Assistant
+          </div>
+        </div>
+      </div>
+
+      <div className="px-3 pt-3">
+        <button
+          type="button"
+          onClick={onNewChat}
+          className="btn-primary w-full text-white font-medium rounded-xl px-4 py-2.5 text-sm flex items-center justify-center gap-2"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          New Chat
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-3 py-4">
+        <div className="text-[10px] uppercase tracking-[0.18em] text-gray-500 px-1 mb-2">
+          Chats
+        </div>
+        <div className="glass rounded-xl p-3 border border-accent-purple/30 cursor-default">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-accent-purple pulse-dot" />
+            <div className="text-xs font-medium text-white">Current Chat</div>
+          </div>
+          <div className="text-[11px] text-gray-500 mt-1">
+            {messageCount} {messageCount === 1 ? "message" : "messages"}
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 py-3 border-t border-border text-[10px] text-gray-500">
+        © {new Date().getFullYear()} FitAI
+      </div>
+    </aside>
+  );
+}
+
+function MainChatArea({
+  messages,
+  input,
+  setInput,
+  loading,
+  scrollRef,
+  handleSubmit,
+}: {
+  messages: Message[];
+  input: string;
+  setInput: (v: string) => void;
+  loading: boolean;
+  scrollRef: RefObject<HTMLDivElement>;
+  handleSubmit: (e: FormEvent) => void;
+}) {
   const inputIsArabic = isArabic(input);
 
   return (
-    <main className="flex flex-col h-screen">
-      {/* Header */}
+    <main className="flex flex-col flex-1 h-full min-w-0">
       <header className="glass border-0 border-b border-border px-4 py-3 flex items-center gap-3">
-        <div className="relative">
-        <img src="/fitai-logo.jpeg" alt="FitAI Logo" className="w-9 h-9 rounded-xl shadow-glow" />
+        <div className="w-9 h-9 rounded-xl avatar-gradient flex items-center justify-center text-white font-bold shadow-glow">
+          F
         </div>
-        <div>
+        <div className="min-w-0">
           <h1 className="text-base font-semibold gradient-text leading-tight">
             FitAI
           </h1>
-          <p className="text-[11px] text-gray-400">
-            Your AI nutrition assistant · مساعد التغذية الذكي
+          <p className="text-[11px] text-gray-400 truncate">
+            Nutrition & Fitness Assistant · مساعد التغذية واللياقة
           </p>
         </div>
       </header>
 
-      {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-2xl mx-auto space-y-5">
           {messages.map((m, i) => (
@@ -107,7 +239,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Input */}
       <div className="glass border-0 border-t border-border px-4 py-4">
         <form
           onSubmit={handleSubmit}
@@ -124,8 +255,8 @@ export default function Home() {
             }}
             placeholder={
               inputIsArabic
-                ? "ماذا تناولت؟ مثال: بيضتان + خبز"
-                : "What did you eat? e.g. 2 eggs + bread"
+                ? "اسأل عن وجباتك، تمارينك، أو أهدافك..."
+                : "Ask about meals, workouts, or your goals..."
             }
             dir={inputIsArabic ? "rtl" : "ltr"}
             rows={1}
@@ -156,8 +287,8 @@ export default function Home() {
         </form>
         <p className="text-[10px] text-gray-500 text-center mt-2">
           {inputIsArabic
-            ? "قد تكون تقديرات FitAI الغذائية غير دقيقة."
-            : "FitAI may produce inaccurate nutritional estimates."}
+            ? "قد تحتوي ردود FitAI على معلومات تقديرية. استشر مختصًا عند الحاجة."
+            : "FitAI may produce estimates. Consult a professional when needed."}
         </p>
       </div>
     </main>
