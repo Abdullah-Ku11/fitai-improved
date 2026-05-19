@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
-export const runtime = "nodejs";
+
 
 const SYSTEM_PROMPT = `
 You are FitAI, an AI fitness and nutrition coach.
