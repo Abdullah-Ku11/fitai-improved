@@ -6,6 +6,9 @@ export default function LandingPage() {
       <Navbar />
       <Hero />
       <Features />
+      <Departments />
+      <Agents />
+      <ExecutiveSection />
       <DashboardPreview />
       <CTA />
       <Footer />
@@ -380,7 +383,128 @@ function CTA() {
     </section>
   );
 }
+function Departments() {
+  const departments = [
+    {
+      title: "Nutrition Department",
+      desc: "Tracks calories, macros, and nutrition goals.",
+    },
+    {
+      title: "Fitness Department",
+      desc: "Generates workout plans and tracks performance.",
+    },
+    {
+      title: "AI Analytics Department",
+      desc: "Provides charts, engagement metrics, and insights.",
+    },
+    {
+      title: "Executive Operations",
+      desc: "AI-powered KPI tracking and strategic recommendations.",
+    },
+  ];
 
+  return (
+    <section className="max-w-6xl mx-auto px-4 sm:px-6 py-24">
+      <div className="text-center mb-14">
+        <p className="text-xs uppercase tracking-[0.2em] text-accent-purple/80 mb-3">
+          AI Departments
+        </p>
+
+        <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
+          Multi-Agent AI System
+        </h2>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {departments.map((d) => (
+          <div
+            key={d.title}
+            className="glass rounded-2xl p-6 border border-border"
+          >
+            <h3 className="text-xl font-semibold text-white mb-3">
+              {d.title}
+            </h3>
+
+            <p className="text-gray-400 text-sm leading-relaxed">
+              {d.desc}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Agents() {
+  const agents = [
+    "Nutrition Agent",
+    "Fitness Agent",
+    "Analytics Agent",
+    "Executive Agent",
+  ];
+
+  return (
+    <section className="max-w-6xl mx-auto px-4 sm:px-6 py-20">
+      <div className="text-center mb-12">
+        <h2 className="text-3xl font-bold text-white">
+          AI Agents
+        </h2>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {agents.map((a) => (
+          <div
+            key={a}
+            className="glass rounded-2xl p-5 border border-border text-center"
+          >
+            <div className="w-12 h-12 rounded-xl bg-accent-gradient mx-auto mb-4" />
+
+            <h3 className="text-white font-semibold">
+              {a}
+            </h3>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ExecutiveSection() {
+  return (
+    <section className="max-w-6xl mx-auto px-4 sm:px-6 py-24">
+      <div className="glass rounded-3xl border border-border p-8">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <p className="text-accent-purple text-sm mb-2">
+              CEO Command Center
+            </p>
+
+            <h2 className="text-3xl font-bold text-white">
+              Executive AI Dashboard
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              ["12.4k", "Active Users"],
+              ["87%", "Retention"],
+              ["$42k", "Revenue"],
+              ["1.2M", "Calories Tracked"],
+            ].map(([v, l]) => (
+              <div
+                key={l}
+                className="bg-white/[0.03] border border-border rounded-2xl p-4 min-w-[140px]"
+              >
+                <p className="text-2xl font-bold text-white">{v}</p>
+                <p className="text-xs text-gray-400 mt-1">{l}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
 /* ────────────────────────── Footer ────────────────────────── */
 
 function Footer() {

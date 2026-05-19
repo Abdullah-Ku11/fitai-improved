@@ -1,49 +1,104 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
+export const runtime = "nodejs";
 
+type ChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
 
-const SYSTEM_PROMPT = `
-You are FitAI, an AI fitness and nutrition coach.
+const getSystemPrompt = (agent: string) => {
+  if (agent === "Nutrition Agent") {
+    return `
+You are FitAI Nutrition Agent.
 
-Your job is to:
-- Help users lose fat, gain muscle, and improve fitness
-- Calculate calories and macros
-- Suggest meals and workout advice
-- Help users stay consistent and motivated
-- Answer clearly and briefly
+You specialize in:
+- calories
+- macros
+- meal plans
+- fat loss
+- muscle gain
+- healthy eating
 
 LANGUAGE RULES:
-- If the user writes in Arabic, respond entirely in Arabic.
-- If the user writes in English, respond entirely in English.
-- Never mix languages.
+- If the user writes in Arabic, respond ENTIRELY in clean Modern Standard Arabic.
+- If the user writes in English, respond ENTIRELY in English.
+- Never mix languages in one reply.
 
-WHEN USERS MENTION FOOD:
-- Estimate calories, protein, carbs, and fats
-- Mention that values are approximate when needed
-
-WHEN INFORMATION IS MISSING:
-Ask for:
-- weight
-- height
-- age
-- gender
-- fitness goal
-
-STYLE:
-- Short and practical responses
-- Friendly and motivating
-- Use bullet points when useful
-- No long essays
-
-IMPORTANT:
-- Do not give dangerous medical advice
-- Do not invent exact nutrition values if uncertain
+Reply clearly and briefly.
 `;
+  }
+
+  if (agent === "Fitness Agent") {
+    return `
+You are FitAI Fitness Agent.
+
+You specialize in:
+- workouts
+- exercises
+- gym routines
+- strength training
+- cardio
+
+LANGUAGE RULES:
+- If the user writes in Arabic, respond ENTIRELY in clean Modern Standard Arabic.
+- If the user writes in English, respond ENTIRELY in English.
+- Never mix languages in one reply.
+
+Reply clearly and briefly.
+`;
+  }
+
+  if (agent === "Analytics Agent") {
+    return `
+You are FitAI Analytics Agent.
+
+You specialize in:
+- health analytics
+- user progress
+- calorie tracking
+- dashboards
+- insights
+
+LANGUAGE RULES:
+- If the user writes in Arabic, respond ENTIRELY in clean Modern Standard Arabic.
+- If the user writes in English, respond ENTIRELY in English.
+- Never mix languages in one reply.
+
+Reply clearly and briefly.
+`;
+  }
+
+  return `
+You are FitAI Executive Agent.
+
+You specialize in:
+- leadership
+- business decisions
+- productivity
+- executive summaries
+- strategic recommendations
+
+LANGUAGE RULES:
+- If the user writes in Arabic, respond ENTIRELY in clean Modern Standard Arabic.
+- If the user writes in English, respond ENTIRELY in English.
+- Never mix languages in one reply.
+
+Reply clearly and briefly.
+`;
+};
+
+function isArabic(text: string): boolean {
+  return /[\u0600-\u06FF]/.test(text);
+}
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, history = [] } = await req.json();
+    const body = await req.json();
+    const message: string = body.message;
+    const history: ChatMessage[] = body.history || [];
+    const agent: string = body.agent || "Nutrition Agent";
 
     if (!message || typeof message !== "string") {
       return NextResponse.json(
@@ -57,8 +112,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           reply: isArabic(message)
-            ? "لم يتم إعداد مفتاح Groq. يرجى تكوين GROQ_API_KEY لتفعيل المساعد التنفيذي."
-            : "Groq API key is not configured. Please set GROQ_API_KEY to enable the executive assistant.",
+            ? "لم يتم إعداد مفتاح Groq. يرجى تكوين GROQ_API_KEY لتفعيل المساعد."
+            : "Groq API key is not configured. Please set GROQ_API_KEY to enable the assistant.",
         },
         { status: 503 }
       );
@@ -73,9 +128,18 @@ export async function POST(req: NextRequest) {
       model: "llama-3.3-70b-versatile",
       temperature: 0.4,
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        ...history,
-        { role: "user", content: message },
+        {
+          role: "system",
+          content: getSystemPrompt(agent),
+        },
+        ...history.map((m) => ({
+          role: m.role,
+          content: m.content,
+        })),
+        {
+          role: "user",
+          content: message,
+        },
       ],
     });
 
@@ -99,8 +163,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-function isArabic(text: string): boolean {
-  return /[\u0600-\u06FF]/.test(text);
 }

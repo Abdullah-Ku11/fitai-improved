@@ -1,11 +1,32 @@
 "use client";
 
-import { useEffect, useRef, useState, FormEvent, RefObject } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  FormEvent,
+  RefObject,
+  Suspense,
+} from "react";
+import { useSearchParams } from "next/navigation";
 
 type Message = {
   role: "user" | "assistant";
   content: string;
 };
+
+type AgentName =
+  | "Nutrition Agent"
+  | "Fitness Agent"
+  | "Analytics Agent"
+  | "Executive Agent";
+
+const AGENTS: AgentName[] = [
+  "Nutrition Agent",
+  "Fitness Agent",
+  "Analytics Agent",
+  "Executive Agent",
+];
 
 const STORAGE_KEY = "fitai-chat";
 
@@ -19,10 +40,18 @@ function isArabic(text: string): boolean {
   return /[\u0600-\u06FF]/.test(text);
 }
 
-export default function ChatPage() {
+function ChatPageContent() {
+  const searchParams = useSearchParams();
+  const agentFromUrl = searchParams.get("agent");
+  const initialAgent: AgentName =
+    agentFromUrl && AGENTS.includes(agentFromUrl as AgentName)
+      ? (agentFromUrl as AgentName)
+      : "Nutrition Agent";
+
   const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [agent, setAgent] = useState<AgentName>(initialAgent);
   const [hydrated, setHydrated] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -85,8 +114,13 @@ export default function ChatPage() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, history: messages }),
+        body: JSON.stringify({
+          message: text,
+          history: messages,
+          agent,
+        }),
       });
+
       const data = await res.json();
       setMessages([
         ...newMessages,
@@ -116,7 +150,12 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
-      <Sidebar onNewChat={handleNewChat} messageCount={messages.length} />
+      <Sidebar
+        onNewChat={handleNewChat}
+        messageCount={messages.length}
+        agent={agent}
+        setAgent={setAgent}
+      />
       <MainChatArea
         messages={messages}
         input={input}
@@ -124,17 +163,31 @@ export default function ChatPage() {
         loading={loading}
         scrollRef={scrollRef}
         handleSubmit={handleSubmit}
+        agent={agent}
+        setAgent={setAgent}
       />
     </div>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={<div className="h-screen w-full bg-bg" />}>
+      <ChatPageContent />
+    </Suspense>
   );
 }
 
 function Sidebar({
   onNewChat,
   messageCount,
+  agent,
+  setAgent,
 }: {
   onNewChat: () => void;
   messageCount: number;
+  agent: AgentName;
+  setAgent: (a: AgentName) => void;
 }) {
   return (
     <aside className="hidden md:flex flex-col w-[280px] shrink-0 glass border-0 border-r border-border h-full">
@@ -147,7 +200,7 @@ function Sidebar({
             Fit<span className="gradient-text">AI</span>
           </div>
           <div className="text-[10px] text-gray-500">
-            Nutrition & Fitness Assistant
+            Nutrition &amp; Fitness Assistant
           </div>
         </div>
       </div>
@@ -175,6 +228,31 @@ function Sidebar({
         </button>
       </div>
 
+      <div className="px-3 pt-4">
+        <div className="text-[10px] uppercase tracking-[0.18em] text-gray-500 px-1 mb-2">
+          Agents
+        </div>
+        <div className="flex flex-col gap-1.5">
+          {AGENTS.map((a) => {
+            const active = agent === a;
+            return (
+              <button
+                key={a}
+                type="button"
+                onClick={() => setAgent(a)}
+                className={`text-left text-xs rounded-lg px-3 py-2 border transition-all ${
+                  active
+                    ? "bg-accent-gradient text-white border-transparent shadow-glow"
+                    : "glass border-border text-gray-300 hover:text-white"
+                }`}
+              >
+                {a}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="flex-1 overflow-y-auto px-3 py-4">
         <div className="text-[10px] uppercase tracking-[0.18em] text-gray-500 px-1 mb-2">
           Chats
@@ -186,6 +264,10 @@ function Sidebar({
           </div>
           <div className="text-[11px] text-gray-500 mt-1">
             {messageCount} {messageCount === 1 ? "message" : "messages"}
+          </div>
+          <div className="text-[10px] text-gray-500 mt-1">
+            Active agent:{" "}
+            <span className="text-accent-purple">{agent}</span>
           </div>
         </div>
       </div>
@@ -204,6 +286,8 @@ function MainChatArea({
   loading,
   scrollRef,
   handleSubmit,
+  agent,
+  setAgent,
 }: {
   messages: Message[];
   input: string;
@@ -211,6 +295,8 @@ function MainChatArea({
   loading: boolean;
   scrollRef: RefObject<HTMLDivElement>;
   handleSubmit: (e: FormEvent) => void;
+  agent: AgentName;
+  setAgent: (a: AgentName) => void;
 }) {
   const inputIsArabic = isArabic(input);
 
@@ -220,15 +306,38 @@ function MainChatArea({
         <div className="w-9 h-9 rounded-xl avatar-gradient flex items-center justify-center text-white font-bold shadow-glow">
           F
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h1 className="text-base font-semibold gradient-text leading-tight">
             FitAI
           </h1>
           <p className="text-[11px] text-gray-400 truncate">
-            Nutrition & Fitness Assistant · مساعد التغذية واللياقة
+            {agent} · مساعد التغذية واللياقة
           </p>
         </div>
       </header>
+
+      {/* Agent selector bar */}
+      <div className="border-b border-border px-4 py-3">
+        <div className="max-w-2xl mx-auto flex gap-2 flex-wrap">
+          {AGENTS.map((a) => {
+            const active = agent === a;
+            return (
+              <button
+                key={a}
+                type="button"
+                onClick={() => setAgent(a)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm border transition-all ${
+                  active
+                    ? "bg-accent-gradient text-white border-transparent shadow-glow"
+                    : "glass border-border text-gray-300 hover:text-white"
+                }`}
+              >
+                {a}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-2xl mx-auto space-y-5">
